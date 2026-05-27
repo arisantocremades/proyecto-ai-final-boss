@@ -1,0 +1,397 @@
+<!-- ═══════════════════════════════════════════════════ EMPLOYEE VIEW -->
+@if (role() === UserRole.Employee) {
+  <div class="page">
+    <header class="page-header">
+      <div>
+        <h1>{{ 'team.title' | translate }}</h1>
+        <p class="page-subtitle">{{ 'team.subtitleEmployee' | translate }}</p>
+      </div>
+    </header>
+
+    @if (myTeam(); as team) {
+      <div class="section">
+        <div class="team-info-header">
+          <div class="team-icon"><i class="pi pi-users"></i></div>
+          <div>
+            <h2 class="team-name">{{ team.name }}</h2>
+            <p class="team-desc">{{ team.description }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header"><h2>{{ 'team.manager' | translate }}</h2></div>
+        @if (myTeamManager(); as mgr) {
+          <div class="member-row">
+            <div class="member-avatar">{{ getInitials(mgr.name) }}</div>
+            <div class="member-info">
+              <span class="member-name">{{ mgr.name }}</span>
+              <span class="member-email">{{ mgr.email }}</span>
+            </div>
+            <p-tag value="{{ 'user.manager' | translate }}" severity="warn" />
+          </div>
+        }
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <h2>{{ 'team.colleagues' | translate }} <span class="count-badge">{{ teammates().length }}</span></h2>
+        </div>
+        @if (teammates().length === 0) {
+          <div class="empty-state"><p>{{ 'team.noColleagues' | translate }}</p></div>
+        } @else {
+          <div class="members-list">
+            @for (member of teammates(); track member.id) {
+              <div class="member-row">
+                <div class="member-avatar">{{ getInitials(member.name) }}</div>
+                <div class="member-info">
+                  <span class="member-name">{{ member.name }}</span>
+                  <span class="member-email">{{ member.email }}</span>
+                </div>
+                @if (member.role === UserRole.Manager) {
+                  <p-tag value="{{ 'user.manager' | translate }}" severity="warn" />
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    } @else {
+      <div class="section"><div class="empty-state"><p>{{ 'team.noTeam' | translate }}</p></div></div>
+    }
+  </div>
+}
+
+<!-- ════════════════════════════════════════════════ MANAGER VIEW -->
+@if (role() === UserRole.Manager) {
+  <div class="page">
+    <header class="page-header">
+      <div>
+        <h1>{{ 'team.title' | translate }}</h1>
+        <p class="page-subtitle">{{ 'team.subtitleManager' | translate }}</p>
+      </div>
+      @if (myTeam()) {
+        <p-button
+          icon="pi pi-pencil"
+          [label]="'team.editTeam' | translate"
+          severity="secondary"
+          variant="outlined"
+          (onClick)="openEditTeam()"
+        />
+      }
+    </header>
+
+    @if (myTeam(); as team) {
+      <div class="section">
+        <div class="team-info-header">
+          <div class="team-icon"><i class="pi pi-users"></i></div>
+          <div>
+            <h2 class="team-name">{{ team.name }}</h2>
+            <p class="team-desc">{{ team.description }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <h2>{{ 'team.members' | translate }} <span class="count-badge">{{ myTeamMembers().length }}</span></h2>
+          <p-button
+            icon="pi pi-plus"
+            [label]="'team.addMember' | translate"
+            size="small"
+            (onClick)="openAddMember()"
+          />
+        </div>
+
+        @if (myTeamMembers().length === 0) {
+          <div class="empty-state"><p>{{ 'team.noMembers' | translate }}</p></div>
+        } @else {
+          <p-table [value]="myTeamMembers()" class="p-datatable-sm" [rowHover]="true">
+            <ng-template pTemplate="header">
+              <tr>
+                <th>{{ 'team.colName' | translate }}</th>
+                <th>{{ 'team.colEmail' | translate }}</th>
+                <th>{{ 'team.colRole' | translate }}</th>
+                <th>{{ 'team.colActions' | translate }}</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-member>
+              <tr>
+                <td>
+                  <div class="member-cell">
+                    <div class="member-avatar member-avatar--sm">{{ getInitials(member.name) }}</div>
+                    <span class="member-cell-name">{{ member.name }}</span>
+                    @if (member.id === userId()) {
+                      <span class="you-badge">{{ 'team.you' | translate }}</span>
+                    }
+                  </div>
+                </td>
+                <td class="email-cell">{{ member.email }}</td>
+                <td>
+                  @if (member.id === userId()) {
+                    <p-tag value="{{ 'user.manager' | translate }}" severity="warn" />
+                  } @else {
+                    <select class="role-select" [value]="member.role" (change)="changeRole(member.id, $event)">
+                      <option value="employee">{{ 'user.employee' | translate }}</option>
+                      <option value="manager">{{ 'user.manager' | translate }}</option>
+                    </select>
+                  }
+                </td>
+                <td>
+                  @if (member.id !== userId()) {
+                    <p-button
+                      icon="pi pi-user-minus"
+                      [label]="'team.remove' | translate"
+                      severity="danger"
+                      variant="outlined"
+                      size="small"
+                      (onClick)="removeMember(member.id)"
+                    />
+                  }
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        }
+      </div>
+    } @else {
+      <div class="section"><div class="empty-state"><p>{{ 'team.noTeam' | translate }}</p></div></div>
+    }
+  </div>
+}
+
+<!-- ════════════════════════════════════════════════════ ADMIN VIEW -->
+@if (role() === UserRole.Admin) {
+  <div class="page">
+    <header class="page-header">
+      <div>
+        <h1>{{ 'team.title' | translate }}</h1>
+        <p class="page-subtitle">{{ 'team.subtitleAdmin' | translate }}</p>
+      </div>
+      <p-button icon="pi pi-plus" [label]="'team.createTeam' | translate" (onClick)="openCreateTeam()" />
+    </header>
+
+    @if (!teamSvc.hasTeams()) {
+      <div class="section">
+        <div class="empty-state empty-state--lg">
+          <div class="empty-icon-wrap"><i class="pi pi-users"></i></div>
+          <p class="empty-title">{{ 'team.noTeamsAdmin' | translate }}</p>
+          <p class="empty-sub">{{ 'team.noTeamsAdminSub' | translate }}</p>
+          <p-button [label]="'team.createFirst' | translate" (onClick)="openCreateTeam()" />
+        </div>
+      </div>
+    } @else {
+      <div class="teams-grid">
+        @for (team of allTeams(); track team.id) {
+          <div class="team-card">
+            <div class="team-card__header">
+              <div class="team-card__title-wrap">
+                <h3 class="team-card__name">{{ team.name }}</h3>
+                <p class="team-card__desc">{{ team.description }}</p>
+              </div>
+              <p-button
+                icon="pi pi-trash"
+                severity="danger"
+                variant="text"
+                size="small"
+                [rounded]="true"
+                (onClick)="deleteTeam(team.id)"
+                [title]="'team.deleteTeam' | translate"
+              />
+            </div>
+
+            <div class="team-card__stat">
+              <i class="pi pi-users"></i>
+              {{ getMemberCount(team.id) }} {{ 'team.membersCount' | translate }}
+            </div>
+
+            <div class="team-card__manager-row">
+              @if (getTeamManager(team); as mgr) {
+                <div class="member-avatar member-avatar--sm">{{ getInitials(mgr.name) }}</div>
+                <div class="member-info">
+                  <span class="manager-label">{{ 'team.manager' | translate }}</span>
+                  <span class="member-name">{{ mgr.name }}</span>
+                </div>
+                <p-button
+                  [label]="'team.reassign' | translate"
+                  severity="secondary"
+                  variant="outlined"
+                  size="small"
+                  (onClick)="openReassign(team.id)"
+                />
+              } @else {
+                <span class="no-manager-warning">{{ 'team.noManager' | translate }}</span>
+                <p-button
+                  [label]="'team.assignManager' | translate"
+                  severity="warn"
+                  size="small"
+                  (onClick)="openReassign(team.id)"
+                />
+              }
+            </div>
+
+            @if (deleteError() && deleteErrorTeamId() === team.id) {
+              <p-message severity="warn">{{ deleteError() | translate }}</p-message>
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
+}
+
+<!-- ══════════════════════════════════════════════════════ DIALOGS -->
+
+<!-- Edit team -->
+<p-dialog
+  [visible]="showEditTeam()"
+  (visibleChange)="showEditTeam.set($event)"
+  [header]="'team.editTeam' | translate"
+  [modal]="true"
+  [style]="{ width: '480px' }"
+  [draggable]="false"
+  [resizable]="false"
+>
+  <div class="dialog-form">
+    <div class="form-field">
+      <label>{{ 'team.fieldName' | translate }}</label>
+      <input pInputText type="text" [value]="editName()" (input)="editName.set($any($event.target).value)" [placeholder]="'team.fieldNamePlaceholder' | translate" />
+    </div>
+    <div class="form-field">
+      <label>{{ 'team.fieldDescription' | translate }}</label>
+      <textarea pTextarea rows="3" [value]="editDesc()" (input)="editDesc.set($any($event.target).value)" [placeholder]="'team.fieldDescPlaceholder' | translate"></textarea>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button [label]="'team.cancel' | translate" severity="secondary" variant="outlined" (onClick)="showEditTeam.set(false)" />
+    <p-button [label]="'team.save' | translate" icon="pi pi-check" (onClick)="saveTeamEdit()" [disabled]="!editName().trim()" />
+  </ng-template>
+</p-dialog>
+
+<!-- Add member -->
+<p-dialog
+  [visible]="showAddMember()"
+  (visibleChange)="showAddMember.set($event)"
+  [header]="'team.addMember' | translate"
+  [modal]="true"
+  [style]="{ width: '480px' }"
+  [draggable]="false"
+  [resizable]="false"
+>
+  <div class="dialog-form">
+    <div class="form-field">
+      <label>{{ 'team.searchByEmail' | translate }}</label>
+      <div class="search-wrap">
+        <input
+          pInputText
+          type="text"
+          [value]="emailSearch()"
+          (input)="onEmailInput($any($event.target).value)"
+          [placeholder]="'team.emailPlaceholder' | translate"
+          autocomplete="off"
+        />
+        @if (showDropdown()) {
+          <ul class="search-dropdown">
+            @for (user of searchResults(); track user.id) {
+              <li class="search-dropdown__item" (mousedown)="$event.preventDefault()" (click)="selectUser(user)">
+                <div class="member-avatar member-avatar--sm">{{ getInitials(user.name) }}</div>
+                <div class="member-info">
+                  <span class="member-name">{{ user.name }}</span>
+                  <span class="member-email">{{ user.email }}</span>
+                </div>
+                @if (user.teamId) { <span class="warn-badge">{{ 'team.alreadyInTeam' | translate }}</span> }
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </div>
+    @if (addMemberError()) {
+      <p-message severity="warn">{{ addMemberError() | translate }}</p-message>
+    }
+    @if (selectedUser(); as user) {
+      <div class="found-user" [class.found-user--taken]="user.teamId">
+        <div class="member-avatar">{{ getInitials(user.name) }}</div>
+        <div class="member-info">
+          <span class="member-name">{{ user.name }}</span>
+          <span class="member-email">{{ user.email }}</span>
+        </div>
+        @if (user.teamId) { <span class="warn-badge">{{ 'team.alreadyInTeam' | translate }}</span> }
+      </div>
+    } @else if (emailSearch().trim().length >= 2 && searchResults().length === 0) {
+      <p class="not-found-msg">{{ 'team.userNotFound' | translate }}</p>
+    }
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button [label]="'team.cancel' | translate" severity="secondary" variant="outlined" (onClick)="showAddMember.set(false)" />
+    <p-button [label]="'team.add' | translate" icon="pi pi-plus" (onClick)="confirmAddMember()" [disabled]="!selectedUser() || !!selectedUser()?.teamId" />
+  </ng-template>
+</p-dialog>
+
+<!-- Create team -->
+<p-dialog
+  [visible]="showCreateTeam()"
+  (visibleChange)="showCreateTeam.set($event)"
+  [header]="'team.createTeam' | translate"
+  [modal]="true"
+  [style]="{ width: '480px' }"
+  [draggable]="false"
+  [resizable]="false"
+>
+  <div class="dialog-form">
+    <div class="form-field">
+      <label>{{ 'team.fieldName' | translate }}</label>
+      <input pInputText type="text" [value]="createName()" (input)="createName.set($any($event.target).value)" [placeholder]="'team.fieldNamePlaceholder' | translate" />
+    </div>
+    <div class="form-field">
+      <label>{{ 'team.fieldDescription' | translate }}</label>
+      <textarea pTextarea rows="3" [value]="createDesc()" (input)="createDesc.set($any($event.target).value)" [placeholder]="'team.fieldDescPlaceholder' | translate"></textarea>
+    </div>
+    <div class="form-field">
+      <label>{{ 'team.fieldManager' | translate }}</label>
+      <p-select
+        [options]="availableManagers()"
+        [ngModel]="createManagerId()"
+        (ngModelChange)="createManagerId.set($event)"
+        optionLabel="name"
+        optionValue="id"
+        [fluid]="true"
+        [placeholder]="'team.selectManager' | translate"
+      />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button [label]="'team.cancel' | translate" severity="secondary" variant="outlined" (onClick)="showCreateTeam.set(false)" />
+    <p-button [label]="'team.create' | translate" icon="pi pi-check" (onClick)="submitCreateTeam()" [disabled]="!createName().trim() || !createManagerId()" />
+  </ng-template>
+</p-dialog>
+
+<!-- Reassign manager -->
+<p-dialog
+  [visible]="showReassign()"
+  (visibleChange)="showReassign.set($event)"
+  [header]="'team.reassignManager' | translate"
+  [modal]="true"
+  [style]="{ width: '420px' }"
+  [draggable]="false"
+  [resizable]="false"
+>
+  <div class="dialog-form">
+    <div class="form-field">
+      <label>{{ 'team.newManager' | translate }}</label>
+      <p-select
+        [options]="reassignableManagers()"
+        [ngModel]="reassignManagerId()"
+        (ngModelChange)="reassignManagerId.set($event)"
+        optionLabel="name"
+        optionValue="id"
+        [fluid]="true"
+        [placeholder]="'team.selectManager' | translate"
+      />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button [label]="'team.cancel' | translate" severity="secondary" variant="outlined" (onClick)="showReassign.set(false)" />
+    <p-button [label]="'team.save' | translate" icon="pi pi-check" (onClick)="confirmReassign()" [disabled]="!reassignManagerId()" />
+  </ng-template>
+</p-dialog>
