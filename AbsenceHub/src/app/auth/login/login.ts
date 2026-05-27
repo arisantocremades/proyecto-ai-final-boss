@@ -61,14 +61,13 @@ export class Login {
 
     const { email, password } = this.loginForm.value;
 
-    setTimeout(() => {
-      const success = this.auth.login(email!, password!);
+    this.auth.login(email!, password!).subscribe(success => {
       if (success) {
         this.router.navigate(['/dashboard']);
       } else {
         this.loginError.set(this.translate.instant('login.errorCredentials'));
         this.loading.set(false);
       }
-    }, 600);
+    });
   }
 }

@@ -1,11 +1,10 @@
-import { Component, inject, signal, computed, OnDestroy } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { AuthService } from '../../auth/services/auth.service';
 import { AbsenceService } from '../../shared/services/absence.service';
 import { AbsenceType, RequestStatus } from '../../shared/models/absence.model';
-import { UserRole } from '../../auth/models/user.model';
 import { countWorkingDays } from '../../shared/utils/working-days';
 import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
@@ -20,7 +19,7 @@ import { MessageModule } from 'primeng/message';
   templateUrl: './new-request.html',
   styleUrl: './new-request.scss',
 })
-export class NewRequest implements OnDestroy {
+export class NewRequest implements OnInit, OnDestroy {
   private fb        = inject(FormBuilder);
   private auth      = inject(AuthService);
   private absence   = inject(AbsenceService);
@@ -29,9 +28,10 @@ export class NewRequest implements OnDestroy {
 
   readonly minDate       = new Date().toISOString().split('T')[0];
   readonly submitError   = signal('');
+  readonly submitting    = signal(false);
   readonly availableDays = computed(() => {
     const user = this.auth.currentUser();
-    return this.absence.getAvailableDays(user?.id ?? '', user?.role ?? UserRole.Employee);
+    return this.absence.getAvailableDays(user?.id ?? '');
   });
 
   readonly absenceTypeOptions = Object.values(AbsenceType);
@@ -44,6 +44,10 @@ export class NewRequest implements OnDestroy {
     endDate:   ['', Validators.required],
     reason:    ['', [Validators.required, Validators.minLength(5)]],
   });
+
+  ngOnInit(): void {
+    this.absence.loadMyAbsences().subscribe();
+  }
 
   ngOnDestroy(): void {
     clearTimeout(this.errorTimer);
@@ -71,7 +75,7 @@ export class NewRequest implements OnDestroy {
   }
 
   onSubmit(): void {
-    if (this.form.invalid || this.endBeforeStart) {
+    if (this.form.invalid || this.endBeforeStart || this.submitting()) {
       this.form.markAllAsTouched();
       return;
     }
@@ -102,13 +106,19 @@ export class NewRequest implements OnDestroy {
       return;
     }
 
+    this.submitting.set(true);
     this.absence.createRequest({
-      userId: user.id, userName: user.name,
-      type: type as AbsenceType, startDate: startDate!, endDate: endDate!,
-      days, status: RequestStatus.Pending, reason: reason!,
+      type: type!,
+      startDate: startDate!,
+      endDate:   endDate!,
+      reason:    reason!,
+    }).subscribe({
+      next:  () => this.router.navigate(['/requests']),
+      error: () => {
+        this.submitting.set(false);
+        this.showError(this.translate.instant('newRequest.errorCreate') || 'Error al enviar la solicitud');
+      },
     });
-
-    this.router.navigate(['/requests']);
   }
 
   private fmt(d: string): string {

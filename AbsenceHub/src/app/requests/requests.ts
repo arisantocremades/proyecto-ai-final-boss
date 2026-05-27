@@ -1,4 +1,4 @@
-import { Component, inject, computed } from '@angular/core';
+import { Component, inject, computed, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { AuthService } from '../auth/services/auth.service';
@@ -14,10 +14,14 @@ import { TagModule } from 'primeng/tag';
   templateUrl: './requests.html',
   styleUrl: './requests.scss',
 })
-export class Requests {
+export class Requests implements OnInit {
   private auth    = inject(AuthService);
   private absence = inject(AbsenceService);
   readonly router = inject(Router);
+
+  ngOnInit(): void {
+    this.absence.loadMyAbsences().subscribe();
+  }
 
   readonly myRequests = computed(() => {
     const uid = this.auth.currentUser()?.id ?? '';

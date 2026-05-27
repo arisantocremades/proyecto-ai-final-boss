@@ -69,3 +69,39 @@
     }
   </div>
 </div>
+
+<!-- ── Diálogo de rechazo ──────────────────────────────────────────────────── -->
+<p-dialog
+  [header]="'manager.rejectTitle' | translate"
+  [visible]="rejectDialogVisible()"
+  (visibleChange)="rejectDialogVisible.set($event)"
+  [modal]="true"
+  [style]="{ width: '460px' }"
+  [draggable]="false"
+  [resizable]="false"
+>
+  <p class="reject-dialog__label">{{ 'manager.rejectCommentLabel' | translate }}</p>
+  <textarea
+    pTextarea
+    [rows]="4"
+    style="width: 100%"
+    [placeholder]="'manager.rejectCommentPlaceholder' | translate"
+    [ngModel]="rejectComment()"
+    (ngModelChange)="rejectComment.set($event)"
+  ></textarea>
+
+  <ng-template pTemplate="footer">
+    <p-button
+      [label]="'manager.rejectCancel' | translate"
+      severity="secondary"
+      variant="outlined"
+      (onClick)="cancelReject()"
+    />
+    <p-button
+      [label]="'manager.rejectConfirm' | translate"
+      severity="danger"
+      [disabled]="!rejectComment().trim()"
+      (onClick)="confirmReject()"
+    />
+  </ng-template>
+</p-dialog>

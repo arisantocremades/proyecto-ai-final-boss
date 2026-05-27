@@ -26,13 +26,14 @@
 - [x] `DataInitializer` — seeds para entorno dev (usuarios mock equivalentes al frontend)
 - [x] `OpenApiConfig` — Swagger UI en `/swagger-ui.html`
 - [x] Tests — `AbsenceServiceImplTest`, `AbsenceControllerTest`
-- [x] `application-dev.yml` — H2 en memoria (`jdbc:h2:mem:absencehub_dev;MODE=PostgreSQL`), consola H2 en `/h2-console`, `show-sql: true`, logs DEBUG
+- [x] `application-dev.yml` — H2 en memoria (`jdbc:h2:mem:absencehub_dev;MODE=PostgreSQL`), consola H2 en `/h2-console`, `show-sql: true`, logs DEBUG; `spring.jpa.defer-datasource-initialization: true` (data.sql se ejecuta DESPUÉS de que Hibernate cree las tablas — sin esto el backend no arranca); `spring.sql.init.encoding: UTF-8` + `mode: always` (tildes en datos de ejemplo)
 - [x] `pom.xml` ajustes de compatibilidad:
   - springdoc `2.8.3 → 2.6.0` (2.8.x incompatible con Spring Boot 3.3.4 — `LiteWebJarsResourceResolver`)
   - H2 scope `test → runtime` (necesario para perfil dev)
   - `java.version` se mantiene en `21` (Java 25 incompatible con Maven 3.9)
 - [x] Backend arrancado correctamente con perfil `dev` y H2 en memoria
 - [x] Swagger UI verificado en `http://localhost:8080/swagger-ui.html`
+- [x] `data.sql` — script de datos de ejemplo para PostgreSQL (prod/staging); 6 usuarios con hashes BCrypt $2b$10$, 1 equipo, 9 ausencias; equivalente exacto a `DataInitializer.java`
 
 ### 🚧 En progreso
 
@@ -49,25 +50,82 @@
 
 ## Frontend — `AbsenceHub/src/`
 
-### ✅ Completado (previo al backend)
+### ✅ Completado (base de componentes)
 
 - [x] Todos los componentes y rutas (`/login`, `/dashboard`, `/calendar`, `/requests`, `/requests/new`, `/team`, `/manager`, `/reports`)
 - [x] Guards — `authGuard`, `managerGuard`
-- [x] Servicios mock — `AuthService`, `AbsenceService`, `TeamService`, `ExportService`, `LangService`
-- [x] i18n — ES/EN completo
+- [x] Servicios — `TeamService`, `ExportService`, `LangService` (mock)
+- [x] i18n — ES/EN completo + claves nuevas para diálogo de rechazo (`manager.rejectTitle`, `rejectCommentLabel`, `rejectCommentPlaceholder`, `rejectConfirm`, `rejectCancel`)
 - [x] Exportación PDF/Excel
 - [x] PrimeNG v20 + tema violet
 
-### 🚧 Pendiente — integración con backend real
+### ✅ Completado — integración con backend real
 
-- [ ] Interceptor HTTP con JWT — `provideHttpClient()` registrado pero sin interceptor
-- [ ] `AuthService` — migrar a `POST /api/v1/auth/login` (ahora en memoria)
-- [ ] `AbsenceService` — migrar a `GET/POST/PATCH /api/v1/absences` (ahora en memoria)
-- [ ] `TeamService` — migrar a `GET/POST /api/v1/teams` (ahora en memoria)
-- [ ] Modelo `AbsenceRequest` — ajustar `days → totalDays`, `userId/userName → user: {id, name, email, role}`, `id: string → number`
-- [ ] Modelo `User` — ajustar `id: string → number`
-- [ ] `manager.ts` + `manager.html` — añadir campo `managerComment` obligatorio al rechazar
-- [ ] `new-request.ts` — `calculatedDays` cuenta días naturales; el backend cuenta laborables (excluye fines de semana) — alinear lógica de preview
+- [x] `src/environments/environment.ts` — `apiUrl: 'http://localhost:8080/api/v1'`
+- [x] `src/app/shared/interceptors/auth.interceptor.ts` — `HttpInterceptorFn` que inyecta `Authorization: Bearer <token>` en cada petición; token leído de `localStorage['absencehub_token']`
+- [x] `app.config.ts` — `provideHttpClient(withInterceptors([authInterceptor]))` activo
+- [x] `AuthService` — migrado a `POST /api/v1/auth/login`; token guardado en `localStorage['absencehub_token']`; sesión de usuario en `localStorage['absencehub_session']`; `login()` devuelve `Observable<boolean>`; `refreshCurrentUser()` disponible vía `GET /api/v1/auth/me`
+- [x] `AbsenceService` — migrado a HttpClient; sin mocks; métodos: `loadMyAbsences()` (`GET /absences`), `loadTeamAbsences()` (`GET /absences/team`), `createRequest()` (`POST /absences`), `approve()` (`PATCH /{id}/approve`), `reject()` (`PATCH /{id}/reject {managerComment}`); todos devuelven `Observable<>`; pipe usa `map(list => list.map(mapApiAbsence))` + `tap(mapped => this._requests.set(mapped))` — el cast `as Observable<AbsenceRequest[]>` fue reemplazado por `map()` correcto; `map` añadido a imports de rxjs junto a `tap`
+- [x] `mapApiAbsence()` — resuelve las 4 incompatibilidades de DTO: `id: number → string`, `user.id/name → userId/userName` (flatten), `totalDays → days`, `createdAt datetime → date` (`split('T')[0]`)
+- [x] `mapApiUser()` — `id: number → string`
+- [x] `Dashboard` — implementa `OnInit`, llama `loadMyAbsences()`; `getAvailableDays()` corregido (ya no pasa `role` como segundo arg)
+- [x] `Requests` — implementa `OnInit`, llama `loadMyAbsences()`
+- [x] `NewRequest` — implementa `OnInit`, llama `loadMyAbsences()` (para detección de conflictos); `createRequest()` usa payload `{type, startDate, endDate, reason}` y `.subscribe()`; signal `submitting` evita doble envío; `getAvailableDays()` corregido
+- [x] `Manager` — implementa `OnInit`, llama `loadTeamAbsences()`; `approve()` con `.subscribe()`; `reject()` abre diálogo con `rejectDialogVisible` / `rejectComment` / `selectedRejectId` signals; `confirmReject()` llama `absence.reject(id, comment).subscribe()`; imports añadidos: `FormsModule`, `DialogModule`, `TextareaModule`
+
+### 🚧 Pendiente
+
+- [ ] `TeamService` — aún usa mocks; migrar a `GET/POST /api/v1/teams`
+- [ ] `new-request.ts` — `calculatedDays` cuenta días naturales; el backend cuenta laborables (excluye fines de semana) — discrepancia en el preview de duración antes de enviar
+- [ ] Tests unitarios — actualizar specs de `AuthService`, `AbsenceService`, `Manager`, `NewRequest`, `Dashboard` y `Requests` (ahora requieren `HttpClientTestingModule` y proveedores de entorno)
+
+---
+
+## Arquitectura de datos — Frontend ↔ Backend
+
+### Flujo HTTP
+
+```
+Componente
+  → ngOnInit() llama service.loadXxx().subscribe()
+  → AbsenceService / AuthService (HttpClient)
+  → authInterceptor añade Bearer token desde localStorage
+  → Spring Boot REST API (localhost:8080/api/v1)
+  → tap() actualiza signal _requests / _sessionUser
+  → computed() se recalcula automáticamente
+  → Template re-renderiza vía Change Detection
+```
+
+### Almacenamiento de sesión (localStorage)
+
+| Clave | Contenido | Ciclo de vida |
+|-------|-----------|---------------|
+| `absencehub_token` | JWT Bearer (string) | Login → Logout |
+| `absencehub_session` | `User` serializado como JSON | Login → Logout; se restaura al cargar la app |
+
+### Mapeo de DTOs — Backend → Frontend
+
+| Campo backend (`ApiAbsenceResponse`) | Campo frontend (`AbsenceRequest`) | Transformación |
+|--------------------------------------|-----------------------------------|----------------|
+| `id: number` | `id: string` | `.toString()` |
+| `user.id: number` | `userId: string` | `api.user.id.toString()` |
+| `user.name: string` | `userName: string` | `api.user.name` (flatten) |
+| `totalDays: number` | `days: number` | rename |
+| `createdAt: 'YYYY-MM-DDTHH:mm:ss'` | `createdAt: 'YYYY-MM-DD'` | `.split('T')[0]` |
+| `type: string` | `type: AbsenceType` | cast |
+| `status: string` | `status: RequestStatus` | cast |
+
+### Endpoints consumidos por el frontend
+
+| Método | URL | Servicio Angular | Llamado desde |
+|--------|-----|-----------------|---------------|
+| `POST` | `/auth/login` | `AuthService.login()` | `Login.onSubmit()` |
+| `GET` | `/auth/me` | `AuthService.refreshCurrentUser()` | (disponible, no usado aún) |
+| `GET` | `/absences` | `AbsenceService.loadMyAbsences()` | `Dashboard`, `Requests`, `NewRequest` (ngOnInit) |
+| `GET` | `/absences/team` | `AbsenceService.loadTeamAbsences()` | `Manager` (ngOnInit) |
+| `POST` | `/absences` | `AbsenceService.createRequest()` | `NewRequest.onSubmit()` |
+| `PATCH` | `/absences/{id}/approve` | `AbsenceService.approve()` | `Manager.approve()` |
+| `PATCH` | `/absences/{id}/reject` | `AbsenceService.reject()` | `Manager.confirmReject()` |
 
 ---
 
@@ -112,3 +170,5 @@ mvn spring-boot:run "-Dspring-boot.run.profiles=prod"
 | 2026-05-26 | Análisis completo del frontend (servicios, modelos, guards, rutas). Generado backend completo (61 archivos): enums, entidades, DTOs, repos, seguridad JWT, mappers MapStruct, 5 servicios con reglas de negocio, 5 controllers, 2 tests. Decisión clave: enums serializados en lowercase (`'sick'` no `'SICK_LEAVE'`). Identificados 5 ajustes pendientes en Angular para integración. |
 | 2026-05-26 | Verificación de enums backend vs frontend. Código real ✅ correcto (`@JsonValue` lowercase en `AbsenceStatus`, `AbsenceType`, `Role`; `JwtUtil` usa `.getValue()` → lowercase). Corregidos 6 errores en `CLAUDE-BACKEND.md`: sección enums sin `@JsonValue`, `SICK_LEAVE` → `SICK`, nota falsa "frontend espera UPPERCASE", test `"PENDING"` → `"pending"`, JWT payload `"MANAGER"` → `"manager"`, tabla incompatibilidades invertida. |
 | 2026-05-27 | Creado `application-dev.yml` (H2 en memoria, consola H2, show-sql). Ajustes `pom.xml`: springdoc `2.8.3→2.6.0` (incompatible con SB 3.3.4), H2 scope `test→runtime`, `java.version` queda en 21 (Java 25 incompatible con Maven 3.9). Backend arrancado correctamente con perfil dev. Swagger UI verificado. Entorno local documentado (Java 21 Adoptium + Maven 3.9.16). |
+| 2026-05-27 | Arreglos post-integración. `application-dev.yml`: añadido `defer-datasource-initialization: true` (el backend no arrancaba — data.sql se ejecutaba antes de que Hibernate creara las tablas) + `sql.init.encoding: UTF-8` + `mode: always`. `AbsenceService`: corregido cast incorrecto `as Observable<AbsenceRequest[]>` en `loadMyAbsences()` y `loadTeamAbsences()` → sustituido por `map(list => list.map(mapApiAbsence))` seguido de `tap()`; `map` añadido a imports rxjs. Integración verificada: `POST /api/v1/auth/login` devuelve 200, flujo front-back funciona correctamente. |
+| 2026-05-27 | Integración frontend-backend completada. Eliminados todos los mocks de `AuthService` y `AbsenceService`. Creados: `environment.ts` (apiUrl), `auth.interceptor.ts` (JWT Bearer). `AuthService` migrado a `POST /auth/login` con `Observable<boolean>`. `AbsenceService` migrado a HttpClient con `loadMyAbsences()`, `loadTeamAbsences()`, todos los métodos devuelven `Observable`. `mapApiAbsence()` resuelve 4 incompatibilidades de DTO (id, userId/userName, totalDays→days, datetime→date). Dashboard, Requests, NewRequest, Manager implementan `OnInit` y cargan datos del backend. Manager añade diálogo de rechazo con `managerComment` obligatorio (3 signals + `confirmReject()`). Nuevas claves i18n ES/EN para el diálogo. Creado `data.sql` para PostgreSQL con 6 usuarios (BCrypt), 1 equipo, 9 ausencias. README actualizado con instrucciones de arranque full-stack. |

@@ -1,4 +1,4 @@
-import { Component, inject, computed } from '@angular/core';
+import { Component, inject, computed, OnInit } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { AuthService } from '../auth/services/auth.service';
@@ -17,7 +17,7 @@ import { TagModule } from 'primeng/tag';
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
-export class Dashboard {
+export class Dashboard implements OnInit {
   readonly auth    = inject(AuthService);
   readonly absence = inject(AbsenceService);
   readonly router  = inject(Router);
@@ -28,11 +28,15 @@ export class Dashboard {
 
   readonly availableDays = computed(() => {
     const user = this.auth.currentUser();
-    return this.absence.getAvailableDays(user?.id ?? '', user?.role ?? UserRole.Employee);
+    return this.absence.getAvailableDays(user?.id ?? '');
   });
 
+  ngOnInit(): void {
+    this.absence.loadMyAbsences().subscribe();
+  }
+
   readonly totalVacationDays = computed(() =>
-    VACATION_DAYS_BY_ROLE[this.auth.currentUser()?.role ?? UserRole.Employee]
+    VACATION_DAYS_BY_ROLE[this.auth.currentUser()?.role ?? UserRole.Employee] ?? 22
   );
 
   readonly myPending = computed(() => {

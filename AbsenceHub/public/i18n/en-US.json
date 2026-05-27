@@ -110,7 +110,12 @@
     "colReason": "Reason",
     "colActions": "Actions",
     "approve": "Approve",
-    "reject": "Reject"
+    "reject": "Reject",
+    "rejectTitle": "Reject request",
+    "rejectCommentLabel": "Reason for rejection (required)",
+    "rejectCommentPlaceholder": "Explain why the request is being rejected...",
+    "rejectConfirm": "Confirm rejection",
+    "rejectCancel": "Cancel"
   },
   "calendar": {
     "title": "Calendar",

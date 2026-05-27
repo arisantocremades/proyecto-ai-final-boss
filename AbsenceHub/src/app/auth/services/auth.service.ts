@@ -1,49 +1,97 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { Observable, tap, map, catchError, of } from 'rxjs';
 import { User, UserRole } from '../models/user.model';
-import { TeamService } from '../../shared/services/team.service';
+import { environment } from '../../../environments/environment';
 
-const MOCK_USERS: Array<User & { password: string }> = [
-  { id: '1', email: 'manager@absencehub.com',  name: 'María López',    role: UserRole.Manager,  password: 'manager123' },
-  { id: '2', email: 'empleado@absencehub.com', name: 'Carlos Martínez', role: UserRole.Employee, password: 'empleado123' },
-  { id: '6', email: 'admin@absencehub.com',    name: 'Admin Sistema',  role: UserRole.Admin,    password: 'admin123' },
-];
+// ── Shapes del backend ──────────────────────────────────────────────────────
+
+interface ApiUserResponse {
+  id: number;
+  email: string;
+  name: string;
+  role: string;
+  availableDays: number;
+  team: { id: number; name: string } | null;
+}
+
+interface ApiAuthResponse {
+  token: string;
+  tokenType: string;
+  user: ApiUserResponse;
+}
+
+// ── Claves de localStorage ───────────────────────────────────────────────────
 
 const SESSION_KEY = 'absencehub_session';
+const TOKEN_KEY   = 'absencehub_token';
+
+// ── Helpers de mapeo ─────────────────────────────────────────────────────────
+
+function mapApiUser(apiUser: ApiUserResponse): User {
+  return {
+    id:    apiUser.id.toString(),
+    email: apiUser.email,
+    name:  apiUser.name,
+    role:  apiUser.role as UserRole,
+  };
+}
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private router      = inject(Router);
-  private teamService = inject(TeamService);
+  private http   = inject(HttpClient);
+  private router = inject(Router);
 
   private _sessionUser = signal<User | null>(this.loadSession());
 
-  readonly currentUser = computed(() => {
-    const session = this._sessionUser();
-    if (!session) return null;
-    const member = this.teamService.getMemberById(session.id);
-    return member ? { ...session, role: member.role } : session;
-  });
+  readonly currentUser     = this._sessionUser.asReadonly();
+  readonly isAuthenticated = computed(() => this._sessionUser() !== null);
+  readonly isManager       = computed(() => this._sessionUser()?.role === UserRole.Manager);
+  readonly isAdmin         = computed(() => this._sessionUser()?.role === UserRole.Admin);
 
-  readonly isAuthenticated = computed(() => this.currentUser() !== null);
-  readonly isManager       = computed(() => this.currentUser()?.role === UserRole.Manager);
-  readonly isAdmin         = computed(() => this.currentUser()?.role === UserRole.Admin);
+  // ── Login ─────────────────────────────────────────────────────────────────
 
-  login(email: string, password: string): boolean {
-    const match = MOCK_USERS.find(u => u.email === email && u.password === password);
-    if (!match) return false;
-
-    const { password: _, ...user } = match;
-    localStorage.setItem(SESSION_KEY, JSON.stringify(user));
-    this._sessionUser.set(user);
-    return true;
+  login(email: string, password: string): Observable<boolean> {
+    return this.http
+      .post<ApiAuthResponse>(`${environment.apiUrl}/auth/login`, { email, password })
+      .pipe(
+        tap(res => {
+          const user = mapApiUser(res.user);
+          localStorage.setItem(TOKEN_KEY,   res.token);
+          localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+          this._sessionUser.set(user);
+        }),
+        map(() => true),
+        catchError(() => of(false)),
+      );
   }
 
+  // ── Logout ────────────────────────────────────────────────────────────────
+
   logout(): void {
+    localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(SESSION_KEY);
     this._sessionUser.set(null);
     this.router.navigate(['/login']);
   }
+
+  // ── Obtener usuario actual desde el backend ───────────────────────────────
+
+  refreshCurrentUser(): Observable<User> {
+    return this.http
+      .get<ApiUserResponse>(`${environment.apiUrl}/auth/me`)
+      .pipe(
+        tap(apiUser => {
+          const user = mapApiUser(apiUser);
+          localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+          this._sessionUser.set(user);
+        }),
+        map(mapApiUser),
+      );
+  }
+
+  // ── Restaurar sesión desde localStorage ──────────────────────────────────
 
   private loadSession(): User | null {
     try {

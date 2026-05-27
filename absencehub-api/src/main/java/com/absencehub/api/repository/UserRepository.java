@@ -1,0 +1,18 @@
+package com.absencehub.api.repository;
+
+import com.absencehub.api.entity.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface UserRepository extends JpaRepository<User, Long> {
+
+    Optional<User> findByEmail(String email);
+
+    List<User> findByEmailContainingIgnoreCaseOrNameContainingIgnoreCase(String email, String name);
+
+    List<User> findByTeamId(Long teamId);
+
+    boolean existsByEmail(String email);
+}

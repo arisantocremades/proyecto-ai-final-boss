@@ -110,7 +110,12 @@
     "colReason": "Motivo",
     "colActions": "Acciones",
     "approve": "Aprobar",
-    "reject": "Rechazar"
+    "reject": "Rechazar",
+    "rejectTitle": "Rechazar solicitud",
+    "rejectCommentLabel": "Motivo del rechazo (obligatorio)",
+    "rejectCommentPlaceholder": "Explica el motivo por el que se rechaza la solicitud...",
+    "rejectConfirm": "Confirmar rechazo",
+    "rejectCancel": "Cancelar"
   },
   "calendar": {
     "title": "Calendario",

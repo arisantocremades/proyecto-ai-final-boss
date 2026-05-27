@@ -1,129 +1,143 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, map, tap } from 'rxjs';
 import { AbsenceRequest, AbsenceType, RequestStatus } from '../models/absence.model';
-import { UserRole } from '../../auth/models/user.model';
-import { VACATION_DAYS_BY_ROLE } from '../models/policy.model';
-import { NotificationService } from './notification.service';
-import { NotificationType } from '../models/notification.model';
+import { environment } from '../../../environments/environment';
 
-const MOCK_REQUESTS: AbsenceRequest[] = [
-  // Carlos Martínez (id: '2') — empleado actual
-  {
-    id: 'r1', userId: '2', userName: 'Carlos Martínez',
-    type: AbsenceType.Vacation, startDate: '2026-06-02', endDate: '2026-06-08', days: 5,
-    status: RequestStatus.Pending, reason: 'Vacaciones de verano', createdAt: '2026-05-20',
-  },
-  {
-    id: 'r2', userId: '2', userName: 'Carlos Martínez',
-    type: AbsenceType.Sick, startDate: '2026-04-10', endDate: '2026-04-11', days: 2,
-    status: RequestStatus.Approved, reason: 'Gripe', createdAt: '2026-04-10',
-  },
-  {
-    id: 'r3', userId: '2', userName: 'Carlos Martínez',
-    type: AbsenceType.Personal, startDate: '2026-03-15', endDate: '2026-03-15', days: 1,
-    status: RequestStatus.Rejected, reason: 'Mudanza', createdAt: '2026-03-10',
-  },
-  // Ana Rodríguez (id: '3')
-  {
-    id: 'r4', userId: '3', userName: 'Ana Rodríguez',
-    type: AbsenceType.Vacation, startDate: '2026-05-27', endDate: '2026-06-02', days: 5,
-    status: RequestStatus.Approved, reason: 'Viaje a Portugal', createdAt: '2026-05-01',
-  },
-  {
-    id: 'r5', userId: '3', userName: 'Ana Rodríguez',
-    type: AbsenceType.Personal, startDate: '2026-07-04', endDate: '2026-07-04', days: 1,
-    status: RequestStatus.Pending, reason: 'Cita médica especialista', createdAt: '2026-05-22',
-  },
-  // Pedro Sánchez (id: '4')
-  {
-    id: 'r6', userId: '4', userName: 'Pedro Sánchez',
-    type: AbsenceType.Vacation, startDate: '2026-06-09', endDate: '2026-06-13', days: 5,
-    status: RequestStatus.Approved, reason: 'Vacaciones', createdAt: '2026-05-15',
-  },
-  {
-    id: 'r7', userId: '4', userName: 'Pedro Sánchez',
-    type: AbsenceType.Vacation, startDate: '2026-07-14', endDate: '2026-07-25', days: 10,
-    status: RequestStatus.Pending, reason: 'Vacaciones de verano', createdAt: '2026-05-23',
-  },
-  // Laura Fernández (id: '5')
-  {
-    id: 'r8', userId: '5', userName: 'Laura Fernández',
-    type: AbsenceType.Sick, startDate: '2026-05-26', endDate: '2026-05-27', days: 2,
-    status: RequestStatus.Approved, reason: 'Visita médica', createdAt: '2026-05-26',
-  },
-  // María López (id: '1') — manager
-  {
-    id: 'r9', userId: '1', userName: 'María López',
-    type: AbsenceType.Vacation, startDate: '2026-06-16', endDate: '2026-06-20', days: 5,
-    status: RequestStatus.Approved, reason: 'Vacaciones', createdAt: '2026-05-10',
-  },
-];
+// ── Shapes del backend ──────────────────────────────────────────────────────
+
+interface ApiUserSummary {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+}
+
+interface ApiAbsenceResponse {
+  id: number;
+  user: ApiUserSummary;
+  type: string;
+  startDate: string;   // 'YYYY-MM-DD'
+  endDate: string;     // 'YYYY-MM-DD'
+  totalDays: number;
+  status: string;
+  reason: string;
+  managerComment: string | null;
+  reviewedBy: ApiUserSummary | null;
+  reviewedAt: string | null;
+  createdAt: string;   // 'YYYY-MM-DDTHH:mm:ss'
+}
+
+// ── Payload de creación ───────────────────────────────────────────────────────
+
+interface CreateAbsencePayload {
+  type: string;
+  startDate: string;
+  endDate: string;
+  reason: string;
+}
+
+// ── Helpers de mapeo ─────────────────────────────────────────────────────────
+
+function mapApiAbsence(api: ApiAbsenceResponse): AbsenceRequest {
+  return {
+    id:        api.id.toString(),
+    userId:    api.user.id.toString(),
+    userName:  api.user.name,
+    type:      api.type as AbsenceType,
+    startDate: api.startDate,
+    endDate:   api.endDate,
+    days:      api.totalDays,
+    status:    api.status as RequestStatus,
+    reason:    api.reason,
+    createdAt: api.createdAt.split('T')[0], // normaliza datetime a solo fecha
+  };
+}
 
 @Injectable({ providedIn: 'root' })
 export class AbsenceService {
-  private notifSvc = inject(NotificationService);
+  private http = inject(HttpClient);
 
-  private _requests = signal<AbsenceRequest[]>(MOCK_REQUESTS);
+  private _requests = signal<AbsenceRequest[]>([]);
 
-  readonly requests = this._requests.asReadonly();
-
+  readonly requests     = this._requests.asReadonly();
   readonly pendingCount = computed(() =>
     this._requests().filter(r => r.status === RequestStatus.Pending).length
   );
 
-  getAvailableDays(userId: string, role: UserRole = UserRole.Employee): number {
-    const totalDays = VACATION_DAYS_BY_ROLE[role];
+  // ── Carga inicial desde el backend ──────────────────────────────────────
+
+  loadMyAbsences(): Observable<AbsenceRequest[]> {
+    return this.http
+      .get<ApiAbsenceResponse[]>(`${environment.apiUrl}/absences`)
+      .pipe(
+        map(list => list.map(mapApiAbsence)),
+        tap(mapped => this._requests.set(mapped)),
+      );
+  }
+
+  loadTeamAbsences(): Observable<AbsenceRequest[]> {
+    return this.http
+      .get<ApiAbsenceResponse[]>(`${environment.apiUrl}/absences/team`)
+      .pipe(
+        map(list => list.map(mapApiAbsence)),
+        tap(mapped => this._requests.set(mapped)),
+      );
+  }
+
+  // ── Calcular días disponibles (con datos ya cargados) ────────────────────
+
+  getAvailableDays(userId: string, totalAllowed = 22): number {
     const used = this._requests()
       .filter(r =>
         r.userId === userId &&
         r.status === RequestStatus.Approved &&
-        r.type   === AbsenceType.Vacation
+        r.type   === AbsenceType.Vacation,
       )
       .reduce((sum, r) => sum + r.days, 0);
-    return totalDays - used;
+    return totalAllowed - used;
   }
 
-  createRequest(data: Omit<AbsenceRequest, 'id' | 'createdAt'>): void {
-    const request: AbsenceRequest = {
-      ...data,
-      id: `r${Date.now()}`,
-      createdAt: new Date().toISOString().split('T')[0],
-    };
-    this._requests.update(list => [request, ...list]);
+  // ── CRUD ─────────────────────────────────────────────────────────────────
+
+  createRequest(payload: CreateAbsencePayload): Observable<AbsenceRequest> {
+    return this.http
+      .post<ApiAbsenceResponse>(`${environment.apiUrl}/absences`, payload)
+      .pipe(
+        tap(created => {
+          const mapped = mapApiAbsence(created);
+          this._requests.update(list => [mapped, ...list]);
+        }),
+        // devuelve el objeto ya mapeado al observable externo
+      ) as unknown as Observable<AbsenceRequest>;
   }
 
-  approve(id: string): void {
-    const req = this._requests().find(r => r.id === id);
-    this._requests.update(list =>
-      list.map(r => r.id === id ? { ...r, status: RequestStatus.Approved } : r)
-    );
-    if (req) {
-      this.notifSvc.push({
-        userId: req.userId,
-        type: NotificationType.RequestApproved,
-        titleKey: 'notifications.approvedTitle',
-        bodyKey: 'notifications.approvedBody',
-        bodyParams: { days: req.days },
-        read: false,
-        requestId: id,
-      });
-    }
+  approve(id: string): Observable<AbsenceRequest> {
+    return this.http
+      .patch<ApiAbsenceResponse>(`${environment.apiUrl}/absences/${id}/approve`, {})
+      .pipe(
+        tap(updated => {
+          const mapped = mapApiAbsence(updated);
+          this._requests.update(list =>
+            list.map(r => r.id === id ? mapped : r),
+          );
+        }),
+      ) as unknown as Observable<AbsenceRequest>;
   }
 
-  reject(id: string): void {
-    const req = this._requests().find(r => r.id === id);
-    this._requests.update(list =>
-      list.map(r => r.id === id ? { ...r, status: RequestStatus.Rejected } : r)
-    );
-    if (req) {
-      this.notifSvc.push({
-        userId: req.userId,
-        type: NotificationType.RequestRejected,
-        titleKey: 'notifications.rejectedTitle',
-        bodyKey: 'notifications.rejectedBody',
-        bodyParams: { days: req.days },
-        read: false,
-        requestId: id,
-      });
-    }
+  reject(id: string, managerComment: string): Observable<AbsenceRequest> {
+    return this.http
+      .patch<ApiAbsenceResponse>(
+        `${environment.apiUrl}/absences/${id}/reject`,
+        { managerComment },
+      )
+      .pipe(
+        tap(updated => {
+          const mapped = mapApiAbsence(updated);
+          this._requests.update(list =>
+            list.map(r => r.id === id ? mapped : r),
+          );
+        }),
+      ) as unknown as Observable<AbsenceRequest>;
   }
 }
