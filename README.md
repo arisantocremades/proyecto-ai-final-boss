@@ -4,9 +4,9 @@
 
 ## 👥 Participants
 
-- Ariadna Santo Cremades
-- Gor Ghazaryan
-- Jose Ramón Castillo
+- Ariadna Santo Cremades (ANGULAR)
+- Gor Ghazaryan (JAVA)
+- Jose Ramón Castillo (DOCS Y AGENTES)
 
 ---
 
