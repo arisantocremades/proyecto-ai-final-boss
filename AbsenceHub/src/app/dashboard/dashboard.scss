@@ -1,0 +1,18 @@
+.stat-card--accent {
+  .stat-value { color: #be185d; }
+}
+
+.stat-link {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--brand-primary);
+  text-decoration: none;
+  &:hover { text-decoration: underline; }
+}
+
+.person-name {
+  font-weight: 600;
+  color: var(--text-heading);
+}
