@@ -73,9 +73,25 @@
 - [x] `NewRequest` — implementa `OnInit`, llama `loadMyAbsences()` (para detección de conflictos); `createRequest()` usa payload `{type, startDate, endDate, reason}` y `.subscribe()`; signal `submitting` evita doble envío; `getAvailableDays()` corregido
 - [x] `Manager` — implementa `OnInit`, llama `loadTeamAbsences()`; `approve()` con `.subscribe()`; `reject()` abre diálogo con `rejectDialogVisible` / `rejectComment` / `selectedRejectId` signals; `confirmReject()` llama `absence.reject(id, comment).subscribe()`; imports añadidos: `FormsModule`, `DialogModule`, `TextareaModule`
 
+### ✅ Completado — notificaciones y mejoras de UX
+
+- [x] `Calendar` — implementa `OnInit`, llama `loadTeamAbsences()` en `ngOnInit()`; el calendario ahora carga ausencias reales del equipo desde el backend
+- [x] `NotificationType` — nuevo valor `RequestSent = 'sent'` para notificar al empleado cuando envía una solicitud
+- [x] `NewRequest` — al crear solicitud exitosamente, genera notificación `RequestSent` para el empleado (vía `NotificationService.push()`)
+- [x] `Manager` — sistema de notificaciones completo:
+  - Al cargar (`ngOnInit`): genera notificación `RequestSubmitted` para el manager por cada solicitud pendiente nueva (deduplicada por `requestId`)
+  - `approve()`: genera notificación `RequestApproved` para el empleado afectado
+  - `confirmReject()`: genera notificación `RequestRejected` para el empleado afectado
+  - Usa `RequestStatus.Pending` (enum) en lugar de string literal `'pending'`
+- [x] `TeamService.changeMemberRole()` — migrado a `PATCH /api/v1/users/{id}/role`; devuelve `Observable<void>`; actualiza el signal local en `tap()` (solo si la API responde OK); inyecta `HttpClient`
+- [x] `Team (team.ts / team.html)` — `changeRole()` usa `.subscribe()` con manejo de error; la columna de rol muestra tags readonly (`p-tag`) en lugar del `<select>` editable; la condición de "es manager" usa `member.role === UserRole.Manager` (antes era `member.id === userId()`)
+- [x] Layout sidebar — navegación condicional por rol: Admin solo ve "Gestión de equipos" (`/team`); Employee/Manager ven el menú completo (dashboard, calendar, requests, policy, team; manager también ve panel manager y reports)
+- [x] i18n (ES + EN) — nuevas claves: `login.hintAdmin`, `notifications.sentTitle`, `notifications.sentBody`
+- [x] Diálogo de reasignación de manager (`team.html`) — ancho aumentado a `560px`, añadido filtro de búsqueda (`filter` + `filterBy="name"`) en el select
+
 ### 🚧 Pendiente
 
-- [ ] `TeamService` — aún usa mocks; migrar a `GET/POST /api/v1/teams`
+- [ ] `TeamService` — `changeMemberRole()` ya usa el backend; pero la carga inicial de miembros y equipos sigue siendo mock — migrar a `GET /api/v1/teams` y `GET /api/v1/users`
 - [ ] `new-request.ts` — `calculatedDays` cuenta días naturales; el backend cuenta laborables (excluye fines de semana) — discrepancia en el preview de duración antes de enviar
 - [ ] Tests unitarios — actualizar specs de `AuthService`, `AbsenceService`, `Manager`, `NewRequest`, `Dashboard` y `Requests` (ahora requieren `HttpClientTestingModule` y proveedores de entorno)
 
@@ -122,10 +138,11 @@ Componente
 | `POST` | `/auth/login` | `AuthService.login()` | `Login.onSubmit()` |
 | `GET` | `/auth/me` | `AuthService.refreshCurrentUser()` | (disponible, no usado aún) |
 | `GET` | `/absences` | `AbsenceService.loadMyAbsences()` | `Dashboard`, `Requests`, `NewRequest` (ngOnInit) |
-| `GET` | `/absences/team` | `AbsenceService.loadTeamAbsences()` | `Manager` (ngOnInit) |
+| `GET` | `/absences/team` | `AbsenceService.loadTeamAbsences()` | `Manager`, `Calendar` (ngOnInit) |
 | `POST` | `/absences` | `AbsenceService.createRequest()` | `NewRequest.onSubmit()` |
 | `PATCH` | `/absences/{id}/approve` | `AbsenceService.approve()` | `Manager.approve()` |
 | `PATCH` | `/absences/{id}/reject` | `AbsenceService.reject()` | `Manager.confirmReject()` |
+| `PATCH` | `/users/{id}/role` | `TeamService.changeMemberRole()` | `MyTeam.changeRole()` |
 
 ---
 
@@ -172,3 +189,4 @@ mvn spring-boot:run "-Dspring-boot.run.profiles=prod"
 | 2026-05-27 | Creado `application-dev.yml` (H2 en memoria, consola H2, show-sql). Ajustes `pom.xml`: springdoc `2.8.3→2.6.0` (incompatible con SB 3.3.4), H2 scope `test→runtime`, `java.version` queda en 21 (Java 25 incompatible con Maven 3.9). Backend arrancado correctamente con perfil dev. Swagger UI verificado. Entorno local documentado (Java 21 Adoptium + Maven 3.9.16). |
 | 2026-05-27 | Arreglos post-integración. `application-dev.yml`: añadido `defer-datasource-initialization: true` (el backend no arrancaba — data.sql se ejecutaba antes de que Hibernate creara las tablas) + `sql.init.encoding: UTF-8` + `mode: always`. `AbsenceService`: corregido cast incorrecto `as Observable<AbsenceRequest[]>` en `loadMyAbsences()` y `loadTeamAbsences()` → sustituido por `map(list => list.map(mapApiAbsence))` seguido de `tap()`; `map` añadido a imports rxjs. Integración verificada: `POST /api/v1/auth/login` devuelve 200, flujo front-back funciona correctamente. |
 | 2026-05-27 | Integración frontend-backend completada. Eliminados todos los mocks de `AuthService` y `AbsenceService`. Creados: `environment.ts` (apiUrl), `auth.interceptor.ts` (JWT Bearer). `AuthService` migrado a `POST /auth/login` con `Observable<boolean>`. `AbsenceService` migrado a HttpClient con `loadMyAbsences()`, `loadTeamAbsences()`, todos los métodos devuelven `Observable`. `mapApiAbsence()` resuelve 4 incompatibilidades de DTO (id, userId/userName, totalDays→days, datetime→date). Dashboard, Requests, NewRequest, Manager implementan `OnInit` y cargan datos del backend. Manager añade diálogo de rechazo con `managerComment` obligatorio (3 signals + `confirmReject()`). Nuevas claves i18n ES/EN para el diálogo. Creado `data.sql` para PostgreSQL con 6 usuarios (BCrypt), 1 equipo, 9 ausencias. README actualizado con instrucciones de arranque full-stack. |
+| 2026-05-27 | Mejoras en calendario, equipos, solicitudes y seguridad. `Calendar` implementa `OnInit` y carga ausencias del equipo. Sistema de notificaciones completado: nuevo `NotificationType.RequestSent`; `NewRequest` genera notif al empleado al enviar; `Manager` genera notifs al cargar pendientes, al aprobar y al rechazar (deduplicadas). `TeamService.changeMemberRole()` migrado a `PATCH /users/{id}/role` con `Observable<void>`. `Team` usa tags readonly en lugar del select de rol. Sidebar condicional por rol: Admin solo ve /team; Manager/Employee ven menú completo. Nuevas claves i18n: `login.hintAdmin`, `notifications.sentTitle/Body`. Diálogo reasignación manager ampliado (560px) con filtro de búsqueda. |
