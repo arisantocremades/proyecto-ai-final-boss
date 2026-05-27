@@ -1,6 +1,6 @@
 # AbsenceHub 🗓️
 
-> HR Vacation & Absence Management Dashboard — Angular final internship project
+> HR Vacation & Absence Management Dashboard — Full Stack Final Internship Project
 
 ## 🚀 Getting Started
 
