@@ -1,0 +1,141 @@
+<div class="page">
+  <header class="page-header">
+    <div>
+      <h1>{{ 'policy.title' | translate }}</h1>
+      <p class="page-subtitle">{{ 'policy.subtitle' | translate }}</p>
+    </div>
+  </header>
+
+  <!-- Aviso legal -->
+  <div class="legal-notice">
+    <span class="pi pi-info-circle"></span>
+    <p>{{ 'policy.legalNotice' | translate }}</p>
+  </div>
+
+  <!-- Tipos de ausencia -->
+  <div class="section">
+    <div class="section-header">
+      <h2>{{ 'policy.typesTitle' | translate }}</h2>
+    </div>
+
+    <p-table [value]="rows" [rowHover]="true">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>{{ 'policy.colType' | translate }}</th>
+          <th>{{ 'policy.colDuration' | translate }}</th>
+          <th>{{ 'policy.colBasis' | translate }}</th>
+          <th>{{ 'policy.colApproval' | translate }}</th>
+          <th>{{ 'policy.colAccumulation' | translate }}</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-row>
+        <tr>
+          <td>
+            <span class="type-badge type-badge--{{ row.type }}">
+              {{ row.typeKey | translate }}
+            </span>
+            <p class="type-note">{{ row.noteKey | translate }}</p>
+          </td>
+
+          <td class="col-duration">
+            <strong>{{ row.durationKey | translate }}</strong>
+          </td>
+
+          <td>
+            <code class="legal-basis">{{ row.legalBasis }}</code>
+          </td>
+
+          <td>
+            @if (row.requiresApproval) {
+              <p-tag severity="secondary" [value]="'policy.yes' | translate" icon="pi pi-user-check" />
+            } @else {
+              <p-tag severity="success" [value]="'policy.auto' | translate" icon="pi pi-bolt" />
+            }
+          </td>
+
+          <td>
+            @if (row.accumulable) {
+              <p-tag severity="info"
+                [value]="'policy.maxCarryover' | translate: { n: row.maxAccumulated }"
+                icon="pi pi-calendar-plus" />
+            } @else if (!row.accumulable && row.durationKey === 'policy.duration.sick') {
+              <span class="muted">{{ 'policy.naShort' | translate }}</span>
+            } @else {
+              <p-tag severity="warn" [value]="'policy.no' | translate" />
+            }
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- Permisos retribuidos Art. 37.3 ET -->
+  <div class="section">
+    <div class="section-header">
+      <h2>{{ 'policy.permissionsTitle' | translate }}</h2>
+    </div>
+    <p class="section-desc">{{ 'policy.permissionsDesc' | translate }}</p>
+
+    <p-table [value]="permissions" [rowHover]="true" class="permissions-table">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>{{ 'policy.colPermission' | translate }}</th>
+          <th class="col-duration">{{ 'policy.colPermDays' | translate }}</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-perm>
+        <tr>
+          <td>{{ perm.motiveKey | translate }}</td>
+          <td class="col-duration">
+            <strong>{{ perm.durationKey | translate }}</strong>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- Acumulación -->
+  <div class="section">
+    <div class="section-header">
+      <h2>{{ 'policy.accTitle' | translate }}</h2>
+    </div>
+    <div class="policy-card">
+      <ul class="policy-list">
+        <li>
+          <span class="pi pi-circle-fill bullet"></span>
+          {{ 'policy.accRule1' | translate }}
+        </li>
+        <li>
+          <span class="pi pi-circle-fill bullet"></span>
+          {{ 'policy.accRule2' | translate }}
+        </li>
+        <li>
+          <span class="pi pi-circle-fill bullet"></span>
+          {{ 'policy.accRule3' | translate }}
+        </li>
+        <li>
+          <span class="pi pi-circle-fill bullet"></span>
+          {{ 'policy.accRule4' | translate }}
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Notificaciones -->
+  <div class="section">
+    <div class="section-header">
+      <h2>{{ 'policy.notifTitle' | translate }}</h2>
+    </div>
+    <p class="section-desc">{{ 'policy.notifDesc' | translate }}</p>
+    <div class="notif-events">
+      @for (event of notifEvents; track event.key) {
+        <div class="notif-event-card">
+          <span class="pi {{ event.icon }} event-icon event-icon--{{ event.severity }}"></span>
+          <p>{{ event.key | translate }}</p>
+        </div>
+      }
+    </div>
+  </div>
+</div>
