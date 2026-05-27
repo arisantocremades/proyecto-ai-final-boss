@@ -128,13 +128,10 @@
                 </td>
                 <td class="email-cell">{{ member.email }}</td>
                 <td>
-                  @if (member.id === userId()) {
+                  @if (member.role === UserRole.Manager) {
                     <p-tag value="{{ 'user.manager' | translate }}" severity="warn" />
                   } @else {
-                    <select class="role-select" [value]="member.role" (change)="changeRole(member.id, $event)">
-                      <option value="employee">{{ 'user.employee' | translate }}</option>
-                      <option value="manager">{{ 'user.manager' | translate }}</option>
-                    </select>
+                    <p-tag value="{{ 'user.employee' | translate }}" severity="info" />
                   }
                 </td>
                 <td>
@@ -372,7 +369,7 @@
   (visibleChange)="showReassign.set($event)"
   [header]="'team.reassignManager' | translate"
   [modal]="true"
-  [style]="{ width: '420px' }"
+  [style]="{ width: '560px', minHeight: '480px' }"
   [draggable]="false"
   [resizable]="false"
 >
@@ -386,6 +383,8 @@
         optionLabel="name"
         optionValue="id"
         [fluid]="true"
+        [filter]="true"
+        filterBy="name"
         [placeholder]="'team.selectManager' | translate"
       />
     </div>

@@ -93,3 +93,9 @@ VALUES
 -- SELECT setval('users_id_seq',  (SELECT MAX(id) FROM users));
 -- SELECT setval('teams_id_seq',  (SELECT MAX(id) FROM teams));
 -- SELECT setval('absence_requests_id_seq', (SELECT MAX(id) FROM absence_requests));
+
+-- ── Sincronizar sequences (H2) ────────────────────────────────────────────
+
+ALTER TABLE users ALTER COLUMN id RESTART WITH 7;
+ALTER TABLE teams ALTER COLUMN id RESTART WITH 2;
+ALTER TABLE absence_requests ALTER COLUMN id RESTART WITH 10;

@@ -125,15 +125,22 @@ export class MyTeam {
     const raw    = (event.target as HTMLSelectElement).value;
     const role   = raw === UserRole.Manager ? UserRole.Manager : UserRole.Employee;
     const member = this.teamSvc.getMemberById(memberId);
-    this.teamSvc.changeMemberRole(memberId, role);
-    this.messageSvc.add({
-      severity: 'success',
-      summary:  this.translate.instant('team.roleChangedSummary'),
-      detail:   this.translate.instant('team.roleChangedDetail', {
-        name: member?.name ?? '',
-        role: this.translate.instant('user.' + role),
+    this.teamSvc.changeMemberRole(memberId, role).subscribe({
+      next: () => this.messageSvc.add({
+        severity: 'success',
+        summary:  this.translate.instant('team.roleChangedSummary'),
+        detail:   this.translate.instant('team.roleChangedDetail', {
+          name: member?.name ?? '',
+          role: this.translate.instant('user.' + role),
+        }),
+        life: 3000,
       }),
-      life: 3000,
+      error: () => this.messageSvc.add({
+        severity: 'error',
+        summary:  this.translate.instant('team.roleChangedSummary'),
+        detail:   this.translate.instant('team.roleChangedError') || 'Error al cambiar el rol',
+        life: 3000,
+      }),
     });
   }
 

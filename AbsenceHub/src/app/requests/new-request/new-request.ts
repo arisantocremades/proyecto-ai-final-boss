@@ -5,6 +5,8 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { AuthService } from '../../auth/services/auth.service';
 import { AbsenceService } from '../../shared/services/absence.service';
 import { AbsenceType, RequestStatus } from '../../shared/models/absence.model';
+import { NotificationService } from '../../shared/services/notification.service';
+import { NotificationType } from '../../shared/models/notification.model';
 import { countWorkingDays } from '../../shared/utils/working-days';
 import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
@@ -20,11 +22,12 @@ import { MessageModule } from 'primeng/message';
   styleUrl: './new-request.scss',
 })
 export class NewRequest implements OnInit, OnDestroy {
-  private fb        = inject(FormBuilder);
-  private auth      = inject(AuthService);
-  private absence   = inject(AbsenceService);
-  readonly router   = inject(Router);
-  private translate = inject(TranslateService);
+  private readonly fb        = inject(FormBuilder);
+  private readonly auth      = inject(AuthService);
+  private readonly absence   = inject(AbsenceService);
+  private readonly notif     = inject(NotificationService);
+  readonly router            = inject(Router);
+  private readonly translate = inject(TranslateService);
 
   readonly minDate       = new Date().toISOString().split('T')[0];
   readonly submitError   = signal('');
@@ -113,7 +116,17 @@ export class NewRequest implements OnInit, OnDestroy {
       endDate:   endDate!,
       reason:    reason!,
     }).subscribe({
-      next:  () => this.router.navigate(['/requests']),
+      next: () => {
+        this.notif.push({
+          userId:    user.id,
+          type:      NotificationType.RequestSent,
+          titleKey:  'notifications.sentTitle',
+          bodyKey:   'notifications.sentBody',
+          bodyParams: { days },
+          read:      false,
+        });
+        this.router.navigate(['/requests']);
+      },
       error: () => {
         this.submitting.set(false);
         this.showError(this.translate.instant('newRequest.errorCreate') || 'Error al enviar la solicitud');

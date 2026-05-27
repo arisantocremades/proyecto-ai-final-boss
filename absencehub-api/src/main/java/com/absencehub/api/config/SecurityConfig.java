@@ -50,7 +50,7 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         // Absences
                         .requestMatchers(GET, "/api/v1/absences/all").hasRole("ADMIN")
-                        .requestMatchers(GET, "/api/v1/absences/team").hasAnyRole("MANAGER", "ADMIN")
+                        .requestMatchers(GET, "/api/v1/absences/team").authenticated()
                         .requestMatchers(PATCH, "/api/v1/absences/*/approve").hasAnyRole("MANAGER", "ADMIN")
                         .requestMatchers(PATCH, "/api/v1/absences/*/reject").hasAnyRole("MANAGER", "ADMIN")
                         // Users

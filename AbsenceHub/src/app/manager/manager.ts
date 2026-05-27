@@ -2,6 +2,10 @@ import { Component, inject, computed, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { AbsenceService } from '../shared/services/absence.service';
+import { AuthService } from '../auth/services/auth.service';
+import { NotificationService } from '../shared/services/notification.service';
+import { NotificationType } from '../shared/models/notification.model';
+import { RequestStatus } from '../shared/models/absence.model';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
@@ -16,23 +20,41 @@ import { TextareaModule } from 'primeng/textarea';
   styleUrl: './manager.scss',
 })
 export class Manager implements OnInit {
-  private absence = inject(AbsenceService);
+  private readonly absence = inject(AbsenceService);
+  private readonly auth    = inject(AuthService);
+  private readonly notif   = inject(NotificationService);
 
   readonly pendingRequests = computed(() =>
     this.absence.requests()
-      .filter(r => r.status === 'pending')
+      .filter(r => r.status === RequestStatus.Pending)
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
   );
 
   // ── Reject dialog state ───────────────────────────────────────────────────
-  readonly rejectDialogVisible = signal(false);
-  readonly rejectComment       = signal('');
-  private  selectedRejectId    = signal<string | null>(null);
+  readonly rejectDialogVisible  = signal(false);
+  readonly rejectComment        = signal('');
+  private readonly selectedRejectId = signal<string | null>(null);
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
 
   ngOnInit(): void {
-    this.absence.loadTeamAbsences().subscribe();
+    const managerId = this.auth.currentUser()?.id ?? '';
+    this.absence.loadTeamAbsences().subscribe(requests => {
+      const notified = new Set(
+        this.notif.all().filter(n => n.requestId).map(n => n.requestId!)
+      );
+      for (const r of requests.filter(r => r.status === RequestStatus.Pending && !notified.has(r.id))) {
+        this.notif.push({
+          userId:     managerId,
+          type:       NotificationType.RequestSubmitted,
+          titleKey:   'notifications.submittedTitle',
+          bodyKey:    'notifications.submittedBody',
+          bodyParams: { name: r.userName, days: r.days },
+          read:       false,
+          requestId:  r.id,
+        });
+      }
+    });
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -45,24 +67,47 @@ export class Manager implements OnInit {
   // ── Actions ───────────────────────────────────────────────────────────────
 
   approve(id: string): void {
-    this.absence.approve(id).subscribe();
+    const req = this.absence.requests().find(r => r.id === id);
+    this.absence.approve(id).subscribe({
+      next: () => {
+        if (req) this.notif.push({
+          userId:     req.userId,
+          type:       NotificationType.RequestApproved,
+          titleKey:   'notifications.approvedTitle',
+          bodyKey:    'notifications.approvedBody',
+          bodyParams: { days: req.days },
+          read:       false,
+          requestId:  id,
+        });
+      },
+    });
   }
 
-  /** Abre el diálogo de rechazo para la solicitud indicada. */
   reject(id: string): void {
     this.selectedRejectId.set(id);
     this.rejectComment.set('');
     this.rejectDialogVisible.set(true);
   }
 
-  /** Confirma el rechazo con el comentario introducido. */
   confirmReject(): void {
     const id      = this.selectedRejectId();
     const comment = this.rejectComment().trim();
     if (!id || !comment) return;
 
+    const req = this.absence.requests().find(r => r.id === id);
     this.absence.reject(id, comment).subscribe({
-      next:  () => this.rejectDialogVisible.set(false),
+      next: () => {
+        if (req) this.notif.push({
+          userId:     req.userId,
+          type:       NotificationType.RequestRejected,
+          titleKey:   'notifications.rejectedTitle',
+          bodyKey:    'notifications.rejectedBody',
+          bodyParams: { days: req.days },
+          read:       false,
+          requestId:  id,
+        });
+        this.rejectDialogVisible.set(false);
+      },
       error: () => this.rejectDialogVisible.set(false),
     });
   }

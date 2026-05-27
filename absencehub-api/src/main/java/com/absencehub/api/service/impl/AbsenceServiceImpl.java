@@ -121,12 +121,12 @@ public class AbsenceServiceImpl implements AbsenceService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<AbsenceResponse> findByTeam(Long managerId) {
-        User manager = loadUser(managerId);
-        if (manager.getTeam() == null) {
-            throw new BusinessException("NO_TEAM", "El manager no tiene equipo asignado");
+    public List<AbsenceResponse> findByTeam(Long userId) {
+        User user = loadUser(userId);
+        if (user.getTeam() == null) {
+            return mapper.toResponseList(absenceRepository.findWithFilters(null, null, null, null));
         }
-        return mapper.toResponseList(absenceRepository.findByTeamId(manager.getTeam().getId()));
+        return mapper.toResponseList(absenceRepository.findByTeamId(user.getTeam().getId()));
     }
 
     @Override

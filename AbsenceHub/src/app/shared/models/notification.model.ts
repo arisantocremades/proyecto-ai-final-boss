@@ -1,5 +1,6 @@
 export enum NotificationType {
   RequestSubmitted = 'submitted',
+  RequestSent      = 'sent',
   RequestApproved  = 'approved',
   RequestRejected  = 'rejected',
   DaysRunningLow   = 'days_low',

@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { TranslateModule } from '@ngx-translate/core';
 import { AbsenceService } from '../shared/services/absence.service';
 import { LangService } from '../shared/services/lang.service';
@@ -31,11 +31,15 @@ interface CalendarDay {
   templateUrl: './calendar.html',
   styleUrl: './calendar.scss',
 })
-export class Calendar {
-  private absence = inject(AbsenceService);
-  private lang    = inject(LangService);
+export class Calendar implements OnInit {
+  private readonly absence = inject(AbsenceService);
+  private readonly lang    = inject(LangService);
 
   readonly today = new Date();
+
+  ngOnInit(): void {
+    this.absence.loadTeamAbsences().subscribe();
+  }
 
   currentYear  = signal(this.today.getFullYear());
   currentMonth = signal(this.today.getMonth());

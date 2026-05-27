@@ -32,7 +32,7 @@ export class Dashboard implements OnInit {
   });
 
   ngOnInit(): void {
-    this.absence.loadMyAbsences().subscribe();
+    this.absence.loadTeamAbsences().subscribe();
   }
 
   readonly totalVacationDays = computed(() =>
