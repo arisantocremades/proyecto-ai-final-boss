@@ -14,5 +14,6 @@ Open your browser at `http://localhost:4200`
 ---
 — Final Internship Project 2026
 ## 👥 Participants
-- Ariadna Santo Cremades
-- Gor Ghazaryan
+- Ariadna Santo Cremades (PARTE ANGULAR)
+- Gor Ghazaryan (PARTE JAVA)
+- JOSÉ RAMON (BBDD)
