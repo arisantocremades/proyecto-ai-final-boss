@@ -1,0 +1,71 @@
+<div class="page">
+  <header class="page-header">
+    <div>
+      <h1>{{ 'manager.title' | translate }}</h1>
+      <p class="page-subtitle">{{ 'manager.subtitle' | translate }}</p>
+    </div>
+    @if (pendingRequests().length > 0) {
+      <span class="pending-badge">
+        <i class="pi pi-clock"></i>
+        {{ pendingRequests().length }} {{ 'manager.pending' | translate }}
+      </span>
+    }
+  </header>
+
+  <div class="section">
+    @if (pendingRequests().length === 0) {
+      <div class="empty-state all-done">
+        <div class="all-done__icon">
+          <i class="pi pi-check-circle"></i>
+        </div>
+        <p class="all-done__title">{{ 'manager.noPending' | translate }}</p>
+      </div>
+    } @else {
+      <p-table
+        [value]="pendingRequests()"
+        class="p-datatable-sm"
+        [rowHover]="true"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th>{{ 'manager.colEmployee' | translate }}</th>
+            <th>{{ 'manager.colType' | translate }}</th>
+            <th>{{ 'manager.colStart' | translate }}</th>
+            <th>{{ 'manager.colEnd' | translate }}</th>
+            <th>{{ 'manager.colDays' | translate }}</th>
+            <th>{{ 'manager.colReason' | translate }}</th>
+            <th>{{ 'manager.colActions' | translate }}</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-req>
+          <tr>
+            <td class="employee-name">{{ req.userName }}</td>
+            <td>{{ 'types.' + req.type | translate }}</td>
+            <td>{{ formatDate(req.startDate) }}</td>
+            <td>{{ formatDate(req.endDate) }}</td>
+            <td>{{ req.days }}</td>
+            <td class="reason-cell">{{ req.reason }}</td>
+            <td class="actions-cell">
+              <p-button
+                icon="pi pi-check"
+                [label]="'manager.approve' | translate"
+                severity="success"
+                size="small"
+                variant="outlined"
+                (onClick)="approve(req.id)"
+              />
+              <p-button
+                icon="pi pi-times"
+                [label]="'manager.reject' | translate"
+                severity="danger"
+                size="small"
+                variant="outlined"
+                (onClick)="reject(req.id)"
+              />
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    }
+  </div>
+</div>
