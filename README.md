@@ -7,6 +7,7 @@
 - Ariadna Santo Cremades (ANGULAR)
 - Gor Ghazaryan (JAVA)
 - Jose Ramón Castillo (DOCS Y AGENTES)
+- Etienne Martinez Gonzalez (PPT Presentación del proyecto)
 
 ---
 
