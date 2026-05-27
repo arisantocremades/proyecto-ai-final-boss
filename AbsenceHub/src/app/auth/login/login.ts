@@ -63,7 +63,7 @@ export class Login {
 
     this.auth.login(email!, password!).subscribe(success => {
       if (success) {
-        this.router.navigate(['/dashboard']);
+        this.router.navigate([this.auth.isAdmin() ? '/team' : '/dashboard']);
       } else {
         this.loginError.set(this.translate.instant('login.errorCredentials'));
         this.loading.set(false);
