@@ -1,9 +1,7 @@
-import { Injectable, signal, computed, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { Injectable, signal, computed } from '@angular/core';
+import { Observable, of } from 'rxjs';
 import { UserRole } from '../../auth/models/user.model';
 import { Team, TeamMember } from '../models/team.model';
-import { environment } from '../../../environments/environment';
 
 const MOCK_MEMBERS: TeamMember[] = [
   { id: '1', name: 'María López',     email: 'manager@absencehub.com', role: UserRole.Manager,  teamId: 't1' },
@@ -28,8 +26,6 @@ const MOCK_TEAMS: Team[] = [
 
 @Injectable({ providedIn: 'root' })
 export class TeamService {
-  private readonly http = inject(HttpClient);
-
   private readonly _teams   = signal<Team[]>(MOCK_TEAMS);
   private readonly _members = signal<TeamMember[]>(MOCK_MEMBERS);
 
@@ -114,11 +110,8 @@ export class TeamService {
   }
 
   changeMemberRole(memberId: string, newRole: UserRole.Employee | UserRole.Manager): Observable<void> {
-    return this.http
-      .patch<void>(`${environment.apiUrl}/users/${memberId}/role`, { role: newRole })
-      .pipe(tap(() =>
-        this._members.update(ms => ms.map(m => m.id === memberId ? { ...m, role: newRole } : m))
-      ));
+    this._members.update(ms => ms.map(m => m.id === memberId ? { ...m, role: newRole } : m));
+    return of(undefined);
   }
 
   reassignManager(teamId: string, newManagerId: string): void {

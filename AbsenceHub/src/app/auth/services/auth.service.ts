@@ -1,47 +1,22 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap, map, catchError, of } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { User, UserRole } from '../models/user.model';
-import { environment } from '../../../environments/environment';
-
-// ── Shapes del backend ──────────────────────────────────────────────────────
-
-interface ApiUserResponse {
-  id: number;
-  email: string;
-  name: string;
-  role: string;
-  availableDays: number;
-  team: { id: number; name: string } | null;
-}
-
-interface ApiAuthResponse {
-  token: string;
-  tokenType: string;
-  user: ApiUserResponse;
-}
-
-// ── Claves de localStorage ───────────────────────────────────────────────────
 
 const SESSION_KEY = 'absencehub_session';
-const TOKEN_KEY   = 'absencehub_token';
 
-// ── Helpers de mapeo ─────────────────────────────────────────────────────────
-
-function mapApiUser(apiUser: ApiUserResponse): User {
-  return {
-    id:    apiUser.id.toString(),
-    email: apiUser.email,
-    name:  apiUser.name,
-    role:  apiUser.role as UserRole,
-  };
-}
+const MOCK_USERS: (User & { password: string })[] = [
+  { id: '1', email: 'manager@absencehub.com',  password: 'manager123',  name: 'María López',     role: UserRole.Manager  },
+  { id: '2', email: 'empleado@absencehub.com', password: 'empleado123', name: 'Carlos Martínez', role: UserRole.Employee },
+  { id: '3', email: 'ana@absencehub.com',       password: 'ana123',      name: 'Ana Rodríguez',   role: UserRole.Employee },
+  { id: '4', email: 'pedro@absencehub.com',     password: 'pedro123',    name: 'Pedro Sánchez',   role: UserRole.Employee },
+  { id: '5', email: 'laura@absencehub.com',     password: 'laura123',    name: 'Laura Fernández', role: UserRole.Employee },
+  { id: '6', email: 'admin@absencehub.com',     password: 'admin123',    name: 'Admin Sistema',   role: UserRole.Admin    },
+];
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private http   = inject(HttpClient);
-  private router = inject(Router);
+  private readonly router = inject(Router);
 
   private _sessionUser = signal<User | null>(this.loadSession());
 
@@ -50,48 +25,24 @@ export class AuthService {
   readonly isManager       = computed(() => this._sessionUser()?.role === UserRole.Manager);
   readonly isAdmin         = computed(() => this._sessionUser()?.role === UserRole.Admin);
 
-  // ── Login ─────────────────────────────────────────────────────────────────
-
   login(email: string, password: string): Observable<boolean> {
-    return this.http
-      .post<ApiAuthResponse>(`${environment.apiUrl}/auth/login`, { email, password })
-      .pipe(
-        tap(res => {
-          const user = mapApiUser(res.user);
-          localStorage.setItem(TOKEN_KEY,   res.token);
-          localStorage.setItem(SESSION_KEY, JSON.stringify(user));
-          this._sessionUser.set(user);
-        }),
-        map(() => true),
-        catchError(() => of(false)),
-      );
+    const match = MOCK_USERS.find(u => u.email === email && u.password === password);
+    if (!match) return of(false);
+    const { password: _pwd, ...user } = match;
+    localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    this._sessionUser.set(user);
+    return of(true);
   }
 
-  // ── Logout ────────────────────────────────────────────────────────────────
-
   logout(): void {
-    localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(SESSION_KEY);
     this._sessionUser.set(null);
     this.router.navigate(['/login']);
   }
 
-  // ── Obtener usuario actual desde el backend ───────────────────────────────
-
   refreshCurrentUser(): Observable<User> {
-    return this.http
-      .get<ApiUserResponse>(`${environment.apiUrl}/auth/me`)
-      .pipe(
-        tap(apiUser => {
-          const user = mapApiUser(apiUser);
-          localStorage.setItem(SESSION_KEY, JSON.stringify(user));
-          this._sessionUser.set(user);
-        }),
-        map(mapApiUser),
-      );
+    return of(this._sessionUser()!);
   }
-
-  // ── Restaurar sesión desde localStorage ──────────────────────────────────
 
   private loadSession(): User | null {
     try {
