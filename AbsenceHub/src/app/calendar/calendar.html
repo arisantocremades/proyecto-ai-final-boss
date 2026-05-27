@@ -1,0 +1,81 @@
+<div class="page">
+  <header class="page-header">
+    <div>
+      <h1>{{ 'calendar.title' | translate }}</h1>
+      <p class="page-subtitle">{{ 'calendar.subtitle' | translate }}</p>
+    </div>
+  </header>
+
+  <div class="section">
+    <div class="cal-nav">
+      <p-button
+        icon="pi pi-chevron-left"
+        variant="outlined"
+        severity="secondary"
+        size="small"
+        [rounded]="true"
+        (onClick)="prevMonth()"
+        [attr.aria-label]="'calendar.prevMonth' | translate"
+      />
+      <span class="cal-title">{{ monthLabel() }}</span>
+      <p-button
+        icon="pi pi-chevron-right"
+        variant="outlined"
+        severity="secondary"
+        size="small"
+        [rounded]="true"
+        (onClick)="nextMonth()"
+        [attr.aria-label]="'calendar.nextMonth' | translate"
+      />
+      <p-button
+        [label]="'calendar.today' | translate"
+        variant="outlined"
+        severity="secondary"
+        size="small"
+        (onClick)="goToday()"
+      />
+    </div>
+
+    <div class="cal-grid">
+      <div class="cal-weekday">{{ 'calendar.mon' | translate }}</div>
+      <div class="cal-weekday">{{ 'calendar.tue' | translate }}</div>
+      <div class="cal-weekday">{{ 'calendar.wed' | translate }}</div>
+      <div class="cal-weekday">{{ 'calendar.thu' | translate }}</div>
+      <div class="cal-weekday">{{ 'calendar.fri' | translate }}</div>
+      <div class="cal-weekday cal-weekday--weekend">{{ 'calendar.sat' | translate }}</div>
+      <div class="cal-weekday cal-weekday--weekend">{{ 'calendar.sun' | translate }}</div>
+
+      @for (day of days(); track day.dateStr) {
+        <div
+          class="cal-day"
+          [class.other-month]="!day.isCurrentMonth"
+          [class.today]="day.isToday"
+          [class.weekend]="day.isWeekend"
+          [class.holiday]="day.isHoliday"
+        >
+          <span class="day-number">{{ day.dayNumber }}</span>
+          @if (day.absences.length > 0) {
+            <div class="absence-pills">
+              @for (a of day.absences.slice(0, 3); track a.name) {
+                <span class="pill" [style.background]="a.color" [title]="a.name">
+                  {{ a.name }} / {{ a.absenceType}}
+                </span>
+              }
+              @if (day.absences.length > 3) {
+                <span class="pill pill--more">+{{ day.absences.length - 3 }}</span>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="cal-legend">
+      <span class="legend-item"><span class="legend-dot" style="background:#8b5cf6"></span>María L.</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#10b981"></span>Carlos M.</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#f59e0b"></span>Ana R.</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#ec4899"></span>Pedro S.</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#06b6d4"></span>Laura F.</span>
+    </div>
+  </div>
+</div>
