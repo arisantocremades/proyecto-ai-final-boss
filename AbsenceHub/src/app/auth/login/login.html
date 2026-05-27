@@ -1,0 +1,77 @@
+<div class="login-wrapper">
+  <div class="login-card">
+
+    <div class="login-brand">
+      <img src="/absencehub_logo_tech.svg" alt="AbsenceHub" class="brand-logo">
+      <p class="brand-tagline">{{ 'login.tagline' | translate }}</p>
+    </div>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form" novalidate>
+
+      <div class="form-field" [class.has-error]="emailError">
+        <label for="email" class="field-label">{{ 'login.email' | translate }}</label>
+        <input
+          id="email"
+          type="email"
+          pInputText
+          formControlName="email"
+          [placeholder]="'login.emailPlaceholder' | translate"
+          autocomplete="email"
+          class="w-full"
+        />
+        @if (emailError) {
+          <small class="field-error">{{ emailError }}</small>
+        }
+      </div>
+
+      <div class="form-field" [class.has-error]="passwordError">
+        <label for="password" class="field-label">{{ 'login.password' | translate }}</label>
+        <div class="password-wrapper">
+          <input
+            id="password"
+            [type]="showPassword() ? 'text' : 'password'"
+            pInputText
+            formControlName="password"
+            [placeholder]="'login.passwordPlaceholder' | translate"
+            autocomplete="current-password"
+          />
+          <button
+            type="button"
+            class="toggle-btn"
+            (click)="togglePassword()"
+            [attr.aria-label]="showPassword() ? ('login.hidePassword' | translate) : ('login.showPassword' | translate)"
+          >
+            @if (showPassword()) {
+              <i class="pi pi-eye-slash"></i>
+            } @else {
+              <i class="pi pi-eye"></i>
+            }
+          </button>
+        </div>
+        @if (passwordError) {
+          <small class="field-error">{{ passwordError }}</small>
+        }
+      </div>
+
+      @if (loginError()) {
+        <p-message severity="error">{{ loginError() }}</p-message>
+      }
+
+      <p-button
+        type="submit"
+        [label]="loading() ? ('login.loggingIn' | translate) : ('login.submit' | translate)"
+        [loading]="loading()"
+        styleClass="submit-btn"
+        [fluid]="true"
+        size="large"
+      />
+
+    </form>
+
+    <div class="login-hint">
+      <p><strong>{{ 'login.hintManager' | translate }}:</strong> manager&#64;absencehub.com / manager123</p>
+      <p><strong>{{ 'login.hintEmployee' | translate }}:</strong> empleado&#64;absencehub.com / empleado123</p>
+    </div>
+
+  </div>
+</div>

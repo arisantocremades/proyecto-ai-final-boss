@@ -1,0 +1,128 @@
+:host { display: block; min-height: 100vh; }
+
+.login-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 50%, #ddd6fe 100%);
+  padding: 1rem;
+}
+
+.login-card {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 8px 40px rgba(109, 40, 217, 0.16);
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 440px;
+  border: 1px solid var(--border-light);
+}
+
+// Brand
+.login-brand {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.brand-logo {
+  width: 220px;
+  display: block;
+  margin: 0 auto 0.75rem;
+}
+
+.brand-tagline {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+// Form
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.field-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-body);
+}
+
+.has-error .p-inputtext {
+  border-color: #e53e3e !important;
+  &:focus { box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.12) !important; }
+}
+
+.field-error {
+  font-size: 0.8125rem;
+  color: #dc2626;
+  font-weight: 500;
+}
+
+// Password
+.password-wrapper {
+  position: relative;
+  width: 100%;
+
+  input {
+    width: 100%;
+    box-sizing: border-box;
+    padding-right: 2.75rem;
+  }
+}
+
+.toggle-btn {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  transition: color 0.15s;
+  font-size: 1rem;
+
+  &:hover { color: var(--brand-primary); }
+}
+
+// Submit button override
+:host ::ng-deep p-button[fluid] .p-button.submit-btn,
+:host ::ng-deep .submit-btn {
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+  padding: 0.8rem !important;
+  background: linear-gradient(135deg, var(--sidebar-bg-from), var(--sidebar-bg-to)) !important;
+  border-color: transparent !important;
+  margin-top: 0.25rem;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3) !important;
+
+  &:hover:not(:disabled) { opacity: 0.9; }
+}
+
+// Hint
+.login-hint {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-light);
+
+  p {
+    font-size: 0.75rem;
+    color: var(--text-subtle);
+    margin: 0.2rem 0;
+    text-align: center;
+    strong { color: var(--text-muted); }
+  }
+}
