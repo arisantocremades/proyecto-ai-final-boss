@@ -1,0 +1,121 @@
+<div class="page">
+
+  <header class="page-header">
+    <div>
+      <h1>{{ 'newRequest.title' | translate }}</h1>
+      <p class="page-subtitle">{{ 'newRequest.subtitle' | translate }}</p>
+    </div>
+  </header>
+
+  @if (submitError()) {
+    <p-message severity="error" [closable]="true" (onClose)="dismissError()">{{ submitError() }}</p-message>
+  }
+
+  <div class="section form-section">
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate class="request-form">
+
+      <!-- Type -->
+      <div class="form-field">
+        <label class="field-label" for="type">{{ 'newRequest.typeLabel' | translate }}</label>
+        <p-select
+          inputId="type"
+          [options]="absenceTypeOptions"
+          formControlName="type"
+          [fluid]="true"
+        >
+          <ng-template pTemplate="selectedItem" let-opt>
+            {{ 'types.' + opt | translate }}
+          </ng-template>
+          <ng-template pTemplate="item" let-opt>
+            {{ 'types.' + opt | translate }}
+          </ng-template>
+        </p-select>
+      </div>
+
+      <!-- Dates -->
+      <div class="form-row form-row--two">
+        <div class="form-field" [class.has-error]="form.get('startDate')?.touched && form.get('startDate')?.invalid">
+          <label class="field-label" for="startDate">{{ 'newRequest.startDate' | translate }}</label>
+          <input
+            id="startDate"
+            type="date"
+            pInputText
+            formControlName="startDate"
+            [min]="minDate"
+          />
+          @if (form.get('startDate')?.touched && form.get('startDate')?.hasError('required')) {
+            <small class="field-error">{{ 'newRequest.startRequired' | translate }}</small>
+          }
+        </div>
+
+        <div class="form-field" [class.has-error]="(form.get('endDate')?.touched && form.get('endDate')?.invalid) || endBeforeStart">
+          <label class="field-label" for="endDate">{{ 'newRequest.endDate' | translate }}</label>
+          <input
+            id="endDate"
+            type="date"
+            pInputText
+            formControlName="endDate"
+            [min]="form.get('startDate')?.value || minDate"
+          />
+          @if (form.get('endDate')?.touched && form.get('endDate')?.hasError('required')) {
+            <small class="field-error">{{ 'newRequest.endRequired' | translate }}</small>
+          }
+          @if (endBeforeStart) {
+            <small class="field-error">{{ 'newRequest.endBeforeStart' | translate }}</small>
+          }
+        </div>
+      </div>
+
+      @if (calculatedDays > 0) {
+        <div class="days-preview">
+          <i class="pi pi-info-circle"></i>
+          <span>
+            {{ 'newRequest.duration' | translate }}
+            <strong>{{ calculatedDays }} {{ (calculatedDays === 1 ? 'newRequest.day' : 'newRequest.days') | translate }}</strong>
+          </span>
+          @if (form.get('type')?.value === 'vacation') {
+            <span class="days-available">
+              · {{ availableDays() }} {{ (availableDays() === 1 ? 'newRequest.available_one' : 'newRequest.available_other') | translate }}
+            </span>
+          }
+        </div>
+      }
+
+      <!-- Reason -->
+      <div class="form-field" [class.has-error]="form.get('reason')?.touched && form.get('reason')?.invalid">
+        <label class="field-label" for="reason">{{ 'newRequest.reason' | translate }}</label>
+        <textarea
+          id="reason"
+          pTextarea
+          formControlName="reason"
+          rows="3"
+          [autoResize]="false"
+          [placeholder]="'newRequest.reasonPlaceholder' | translate"
+        ></textarea>
+        @if (form.get('reason')?.touched && form.get('reason')?.hasError('required')) {
+          <small class="field-error">{{ 'newRequest.reasonRequired' | translate }}</small>
+        }
+        @if (form.get('reason')?.touched && form.get('reason')?.hasError('minlength')) {
+          <small class="field-error">{{ 'newRequest.reasonMin' | translate }}</small>
+        }
+      </div>
+
+      <!-- Actions -->
+      <div class="form-actions">
+        <p-button
+          [label]="'newRequest.cancel' | translate"
+          severity="secondary"
+          variant="outlined"
+          (onClick)="router.navigate(['/requests'])"
+        />
+        <p-button
+          type="submit"
+          [label]="'newRequest.submit' | translate"
+          icon="pi pi-send"
+          [disabled]="endBeforeStart"
+        />
+      </div>
+
+    </form>
+  </div>
+</div>

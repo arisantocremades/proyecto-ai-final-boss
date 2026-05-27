@@ -1,0 +1,81 @@
+// Form layout
+.form-section { max-width: 600px; }
+
+.request-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+
+  &--two {
+    @media (min-width: 500px) {
+      flex-direction: row;
+      gap: 1rem;
+      .form-field { flex: 1; }
+    }
+  }
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+
+  textarea.p-textarea {
+    resize: vertical;
+    min-height: 90px;
+    width: 100%;
+  }
+}
+
+.field-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-body);
+}
+
+.field-error {
+  font-size: 0.8125rem;
+  color: #dc2626;
+  font-weight: 500;
+}
+
+.has-error .p-inputtext,
+.has-error .p-textarea {
+  border-color: #e53e3e !important;
+}
+
+// Days preview
+.days-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--brand-primary-50);
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  font-size: 0.875rem;
+  color: var(--brand-primary);
+  font-weight: 500;
+
+  i { font-size: 1rem; flex-shrink: 0; }
+  strong { font-weight: 800; }
+}
+
+.days-available {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+// Actions
+.form-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  padding-top: 0.5rem;
+}
