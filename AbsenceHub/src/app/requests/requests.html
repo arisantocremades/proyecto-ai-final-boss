@@ -1,0 +1,60 @@
+<div class="page">
+  <header class="page-header">
+    <div>
+      <h1>{{ 'requests.title' | translate }}</h1>
+      <p class="page-subtitle">{{ 'requests.subtitle' | translate }}</p>
+    </div>
+    <p-button
+      icon="pi pi-plus"
+      [label]="'requests.newRequest' | translate"
+      (onClick)="router.navigate(['/requests/new'])"
+    />
+  </header>
+
+  <div class="section">
+    @if (myRequests().length === 0) {
+      <div class="empty-state">
+        <i class="pi pi-inbox empty-icon"></i>
+        <p>{{ 'requests.noRequests' | translate }}</p>
+        <p-button
+          [label]="'requests.createFirst' | translate"
+          (onClick)="router.navigate(['/requests/new'])"
+          styleClass="mt-3"
+          size="small"
+        />
+      </div>
+    } @else {
+      <p-table
+        [value]="myRequests()"
+        class="p-datatable-sm"
+        [rowHover]="true"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th>{{ 'requests.colType' | translate }}</th>
+            <th>{{ 'requests.colStart' | translate }}</th>
+            <th>{{ 'requests.colEnd' | translate }}</th>
+            <th>{{ 'requests.colDays' | translate }}</th>
+            <th>{{ 'requests.colStatus' | translate }}</th>
+            <th>{{ 'requests.colReason' | translate }}</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-req>
+          <tr>
+            <td>{{ 'types.' + req.type | translate }}</td>
+            <td>{{ formatDate(req.startDate) }}</td>
+            <td>{{ formatDate(req.endDate) }}</td>
+            <td>{{ req.days }}</td>
+            <td>
+              <p-tag
+                [value]="'statuses.' + req.status | translate"
+                [severity]="getTagSeverity(req.status)"
+              />
+            </td>
+            <td class="reason-cell">{{ req.reason }}</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    }
+  </div>
+</div>
