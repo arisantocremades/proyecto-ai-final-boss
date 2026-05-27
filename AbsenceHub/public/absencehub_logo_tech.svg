@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="227" height="72" viewBox="0 0 227 72">
+  <title>AbsenceHub</title>
+
+  <rect x="0" y="0" width="72" height="72" rx="15" fill="#0D0D0D"/>
+  <rect x="0" y="0" width="72" height="72" rx="15" fill="none" stroke="#C9A84C" stroke-width="1.2"/>
+
+  <rect x="10" y="10" width="16" height="16" rx="4" fill="#C9A84C"/>
+  <rect x="30" y="10" width="16" height="16" rx="4" fill="#C9A84C" opacity="0.25"/>
+  <rect x="50" y="10" width="16" height="16" rx="4" fill="#C9A84C" opacity="0.25"/>
+  <rect x="10" y="30" width="16" height="16" rx="4" fill="#C9A84C" opacity="0.25"/>
+  <rect x="30" y="30" width="16" height="16" rx="4" fill="#A8E6CF"/>
+  <rect x="50" y="30" width="16" height="16" rx="4" fill="#C9A84C" opacity="0.25"/>
+  <rect x="10" y="50" width="16" height="16" rx="4" fill="#C9A84C" opacity="0.25"/>
+  <rect x="30" y="50" width="16" height="16" rx="4" fill="#C9A84C" opacity="0.25"/>
+  <rect x="50" y="50" width="16" height="16" rx="4" fill="#F5F0E8"/>
+
+  <path d="M23 38 L27 42 L37 32" fill="none" stroke="#0D0D0D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="68" cy="6" r="4" fill="#C9A84C"/>
+  <line x1="88" y1="10" x2="88" y2="62" stroke="#0D0D0D" stroke-width="0.8" opacity="0.15"/>
+
+  <text x="100" y="40"
+    font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
+    font-size="28" font-weight="200" letter-spacing="2"
+    fill="#0D0D0D">absence</text>
+
+  <text x="102" y="64"
+    font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
+    font-size="17" font-weight="900" letter-spacing="9"
+    fill="#C9A84C">hub</text>
+
+</svg>
